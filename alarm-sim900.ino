@@ -219,7 +219,7 @@ void parseSMSContent() {
 
   while ( strlen(ptr) >= 2 ) {
 
-    if ( ptr[1] == '|' ) {
+    if ( ptr[1] == '.' ) {
 
       if ( 
         ptr[2] == '0'
@@ -229,16 +229,29 @@ void parseSMSContent() {
       ) {
 
         if ( ptr[0] == '0' ) {
+          
           alarmStatus = 0;
-          Serial.println("Alarm OFF - deactivated");
+          Serial.println("Alarm is OFF - deactivated");
           digitalWrite(13, LOW);
-          sendSMS("Alarm OFF - deactivated");
+          sendSMS("Alarm is OFF - deactivated");
+          
         } else if ( ptr[0] == '1' ) {
+          
           alarmStatus = 1;
-          Serial.println("Alarm ON - activated");
+          Serial.println("Alarm is ON - activated");
           digitalWrite(13, HIGH);
-          sendSMS("Alarm ON - activated");
-        } else {
+          sendSMS("Alarm is ON - activated");
+          
+        } else if ( ptr[0] == '?' ) {
+          
+          char alarmStatusString[]="Alarm status: ";
+          char alarmStatusStringConcat[20];
+          sprintf(alarmStatusStringConcat,"%s%s",alarmStatusString,(alarmStatus == 0 ? "OFF" : "ON"));
+          Serial.println(alarmStatusStringConcat);
+          sendSMS(alarmStatusStringConcat);
+          
+        }else {        
+          
           Serial.println("You have to activate or deactivate the alarm");
           sendSMS("You have to activate or deactivate the alarm");
         }
@@ -259,7 +272,7 @@ void parseSMSContent() {
 
 
 void sendSMS(String msg) {
-  GPRS.println("AT+CMGS=\"+480000000000\"");
+  GPRS.println("AT+CMGS=\"+48600184276\"");
   delay(500);
   GPRS.print(msg);
   GPRS.write( 0x1a );  
@@ -267,7 +280,7 @@ void sendSMS(String msg) {
 
 void phoneCall() {
   Serial.println("SIM starts calling...");
-  GPRS.println("ATD0000000000000000;");
+  GPRS.println("ATD0048508513055;");
   delay(1000);
 }
 
