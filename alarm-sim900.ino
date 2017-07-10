@@ -16,9 +16,13 @@ enum _parseState {
   PS_READ_CMGR_CONTENT
 };
 
+#define PIR_PIN 12
+
 byte state = PS_DETECT_MSG_TYPE;
 
-byte alarmStatus = 0;
+boolean alarmStatus = false;
+unsigned long alarmTriggerTime = 0;
+unsigned long alarmTriggerDelay = 3 * 60 * 1000; // 3 minutes
 
 char buffer[80];
 byte pos = 0;
@@ -36,13 +40,16 @@ void setup()
   GPRS.begin(9600);
   Serial.begin(9600);
 
-  pinMode(13, OUTPUT);
+  pinMode(PIR_PIN, INPUT);
+  pinMode(13, OUTPUT); // test builtin led
 
   GPRS.println("AT+CMGF=1");
   delay(200);
 
   GPRS.println("AT+CMGD=1,4");
   delay(200);
+
+  sendSMS("Alarm powered on");
   
   // Not really necessary but prevents the serial monitor from dropping any input
   while(GPRS.available()) {
@@ -54,6 +61,29 @@ void setup()
 void loop() {
   while(GPRS.available()) {
     parseATText(GPRS.read());
+  }
+
+  if ( alarmStatus == true ) {
+
+    if ( millis() - alarmTriggerTime >= alarmTriggerDelay ) {
+      
+      if ( 
+        digitalRead(PIR_PIN) == HIGH
+        && alarmTriggerTime == 0
+      ) {
+        alarmTriggerTime = millis();
+        digitalWrite(13, HIGH);
+        //Serial.println("on");
+        //GPRS.println("ATD0048508513055;");
+        //delay(1000);
+      } else {
+        alarmTriggerTime = 0;
+        digitalWrite(13, LOW);
+        //Serial.println("off");
+        //GPRS.println("AT+CHUP");
+        //delay(1000);    
+      }  
+    }
   }
 }
 
@@ -230,23 +260,23 @@ void parseSMSContent() {
 
         if ( ptr[0] == '0' ) {
           
-          alarmStatus = 0;
+          alarmStatus = false;
           Serial.println("Alarm is OFF - deactivated");
-          digitalWrite(13, LOW);
+          //digitalWrite(13, LOW);
           sendSMS("Alarm is OFF - deactivated");
           
         } else if ( ptr[0] == '1' ) {
           
-          alarmStatus = 1;
+          alarmStatus = true;
           Serial.println("Alarm is ON - activated");
-          digitalWrite(13, HIGH);
+          //digitalWrite(13, HIGH);
           sendSMS("Alarm is ON - activated");
           
         } else if ( ptr[0] == '?' ) {
           
           char alarmStatusString[]="Alarm status: ";
           char alarmStatusStringConcat[20];
-          sprintf(alarmStatusStringConcat,"%s%s",alarmStatusString,(alarmStatus == 0 ? "OFF" : "ON"));
+          sprintf(alarmStatusStringConcat,"%s%s",alarmStatusString,(alarmStatus == false ? "OFF" : "ON"));
           Serial.println(alarmStatusStringConcat);
           sendSMS(alarmStatusStringConcat);
           
@@ -272,7 +302,8 @@ void parseSMSContent() {
 
 
 void sendSMS(String msg) {
-  GPRS.println("AT+CMGS=\"+48600184276\"");
+  GPRS.println("AT+CMGS=\"+48508513055\"");
+  //GPRS.println("AT+CMGS=\"+48600184276\"");
   delay(500);
   GPRS.print(msg);
   GPRS.write( 0x1a );  
