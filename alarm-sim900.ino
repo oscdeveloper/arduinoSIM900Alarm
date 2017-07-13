@@ -22,7 +22,7 @@ byte state = PS_DETECT_MSG_TYPE;
 
 boolean alarmStatus = false;
 unsigned long alarmTriggerTime = 0;
-unsigned long alarmTriggerDelay = 3 * 60 * 1000; // 3 minutes
+unsigned long alarmTriggerDelay = 0.5 * 60 * 1000; // 3 minutes or 30 sec
 
 char buffer[80];
 byte pos = 0;
@@ -49,6 +49,7 @@ void setup()
   GPRS.println("AT+CMGD=1,4");
   delay(200);
 
+  delay(10000); // 10 sec
   sendSMS("Alarm powered on");
   
   // Not really necessary but prevents the serial monitor from dropping any input
@@ -74,14 +75,14 @@ void loop() {
         alarmTriggerTime = millis();
         digitalWrite(13, HIGH);
         //Serial.println("on");
-        //GPRS.println("ATD0048508513055;");
-        //delay(1000);
+        GPRS.println("ATD0048508513055;");
+        delay(1000);
       } else {
         alarmTriggerTime = 0;
         digitalWrite(13, LOW);
         //Serial.println("off");
-        //GPRS.println("AT+CHUP");
-        //delay(1000);    
+        GPRS.println("AT+CHUP");
+        delay(1000);    
       }  
     }
   }
